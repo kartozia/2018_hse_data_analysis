@@ -1,0 +1,10 @@
+---
+title: "hw1_Kartozia"
+output: html_document
+---
+### 1.1
+``` {r}
+library(tidyverse)
+df <- read_csv("https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw1_agreement/hw1_1_zilo_class.csv", col_names = TRUE)
+df
+```
