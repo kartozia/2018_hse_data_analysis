@@ -19,7 +19,7 @@ df %>%
   select(s_id, stimulus, translation_ru, stimulus_source, class) %>% 
   spread(key = s_id, value = class) ->
   df_short
-head(df_short)
+agree(df_short[,-c(1:3)])
 ```
 ### 1.3
 Из преобразованным датасета hw1_1_zilo_class.csv выберите спикеров с номером 7 и 11 и посчитайте для них каппу Коэна.
@@ -34,29 +34,52 @@ kappam.fleiss(df_short[,-c(1:3)])
 ```
 ### 1.5
 Представим, что Вы пишите статью, напишите короткий абзац, который бы обобщал результаты, полученные в предыдущих заданиях.
-``` {r}
-```
+
+  Наличие вариативности в отнесению к тому или иному классу заимствованой и исконной лексики в зиловском диалекте андийского языка проверялось при помощи следующих мер согласия: процент полного согласия, каппа Коэна и каппа Фляйса. Процент полного согласия между информантами составил 73%. Это является хорошим результатом, если учитывать, что возможность случайного совпадения / расхождения суждений не принимается во внимание. Результат каппы Коэна между парами информантов составил 0.82, что по [Landis, Koch 1977] интерпретируется как "практически идеально согласованы". Каппа Фляйса показала схожий с каппой Коэна результат — 0.83. Проведённые тесты говорят о низкой вариативности в отнесении к классу заимствованой и исконной лексики.
+
 ### 2.1
 Скачайте датасет hw1_2_verbs.csv (см. описание выше). Посчитайте количество участников в датасете (в ответ выведите тибл с переменной n).
 ``` {r}
+df <- read_csv("https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw1_agreement/hw1_2_verbs.csv", col_names = TRUE)
+df <- as_tibble(df)
+df %>%
+  distinct(SubjectCode) %>%
+  summarise(n = n())
 ```
 ### 2.2
 Посчитайте среднюю оценку глаголов разного типа для каждого пола в датасете (в ответ выведите тибл с переменными WordType, Gender и mean).
 ``` {r}
+df %>%
+  group_by(WordType, Gender) %>% 
+  summarize(mean = mean(GivenScore))
 ```
 ### 2.3
 Преобразуйте датасет в короткий формат и удалите строки, в которых есть пропущенные значения (у меня вышел тибл 59 x 124). Посчитайте процент полного согласия.
 ``` {r}
+df %>% 
+  select(SubjectCode, Stimulus, WordType, Prefix, GivenScore) %>% 
+  spread(key = SubjectCode, value = GivenScore) ->
+  df_short
+df_short <-drop_na(df_short)
+agree(df_short[,-c(1:3)])
 ```
 ### 2.4
 Посчитайте каппу Фляйса для преобразованного датасета.
 ``` {r}
+kappam.fleiss(df_short[,-c(1:3)])
 ```
 ### 2.5
 Посчитайте ICC для преобразованного датасета.
 ``` {r}
+icc(df_short[,-c(1:3)], model = "twoway", type = "agreement")
 ```
 ### 2.6
 Создайте тибл, содержащий минимальное (min) и максимальное (max) значение попарной корреляции Кендала ответов всех участников эксперимента со словами (т. е. корреляция ответов АА и AB, AA и AC и т. д.). В преобразовании матрицы, пораждаемой функцией cor() мне очень помогла функция as.table().
 ``` {r}
+check <- as.table(cor(df_short[,-c(1:3)], method = "kendall"))
+rownames(check)[row(check)[upper.tri(check)]]
+df1 <- tibble(participant1=rownames(check)[row(check)[upper.tri(check)]], 
+              participant2=colnames(check)[col(check)[upper.tri(check)]],
+              correlation = check[upper.tri(check)])
+tibble(max = max(df1$correlation), min = min(df1$correlation))
 ```
