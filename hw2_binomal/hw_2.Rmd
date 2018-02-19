@@ -1,0 +1,68 @@
+---
+title: "hw2_Kartozia"
+author: "Inga Kartozia"
+date: "18 02 2018"
+output: html_document
+---
+### 1.1
+``` {r}
+library(tidyverse)
+df <- read_csv("https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw2_binomial/hw2_binomial.csv", col_names = TRUE)
+df <- as_tibble(df)
+binomial_test <- binom.test(x = df$k, n = df$n, p = df$prior)
+binomial_test
+```
+### 1.2
+``` {r}
+library(mosaic)
+set.seed(42)
+do(1000)*
+  sum(sample(x = 1:0, 
+             size = df$n, 
+             prob = c(df$prior, (1-df$prior)), 
+             replace = TRUE)) -> simulations
+simulations %>% 
+  mutate(greater = sum >= df$k) %>% 
+  count(greater)
+```
+### 1.3
+Приведите среднее апостериорного распределения, используя prior
+ как средние априорного распределения, а n
+ как количество элементов для вычисления апостериорного распределения.
+```{r}
+alpha_prior <- df$prior*df$n
+beta_prior <- (1-df$prior)*df$n
+alpha_data <- df$k 
+beta_data <- df$n - df$k
+alpha_post <- alpha_prior + alpha_data
+beta_post <- beta_prior + beta_data
+x <- seq(0, 1, length = 100)
+data_frame(p = rep(x, 3),
+           density = c(dbeta(x, alpha_prior, beta_prior),
+                       dbeta(x, alpha_data, beta_data),
+                       dbeta(x, alpha_post, beta_post)),
+           type = rep(c("prior", "likelihood", "posterior"), each = 100))%>% 
+  ggplot(aes(x = p, y = density, color = type))+
+  geom_line()+
+  theme_bw()
+```
+
+### 1.4
+
+Приведите среднее апостериорного распределения, используя неинформативное априорное распределение.
+```{r}
+x <- seq(0, 1, length = 100)
+data_frame(p = rep(x, 3),
+           density = c(dbeta(x, 1, 1),
+                       dbeta(x, alpha_data, beta_data),
+                       dbeta(x, alpha_data + 1, beta_data + 1)),
+           type = rep(c("prior", "likelihood", "posterior"), each = 100))%>% 
+  ggplot(aes(x = p, y = density, color = type))+
+  geom_line()+
+  theme_bw()
+```
+### 1.5
+
+Представим, что Вы пишите статью, напишите короткий абзац, который бы обобщал результаты, полученные в предыдущих заданиях. Не забывайте приводить результаты статистических тестов.
+```{r}
+```
