@@ -1,0 +1,118 @@
+---
+title: "hw3_Kartozia"
+author: "Inga Kartozia"
+date: "03 03 2018"
+output: html_document
+---
+
+```{r cars}
+library(tidyverse)
+library(bootstrap)
+library(mosaic)
+
+df <- read_csv("https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw3_binomial_ci/hw3_wodehouse.csv", col_names = TRUE)
+df <- as_tibble(df)
+```
+### 1.1
+
+Посчитайте среднее употребление слова “сэр” по каждой главе, а потом посчитайте grand mean. Ответ выведите в формате тиббл.
+``` {r}
+df %>% 
+  filter(word == "сэр") %>% 
+  count(chapter) ->
+  chapter_av
+
+df %>%
+  group_by(chapter) %>% 
+  count(chapter) ->
+  total
+
+chapter_av['total'] <- total$n
+
+chapter_av %>%
+  mutate(average = n/total) %>% 
+  arrange(desc(average)) %>% 
+  summarise(g_mean = mean(average)) ->
+  grand_mean
+as_tibble(grand_mean)
+```
+
+### 1.2
+
+Посчитайте бутстрэпом доверительный интервал для средней доли слова “сэр” в главах романа и выведите его размер в формате тиббл.
+``` {r}
+set.seed(42)
+chapter_av %>%
+  mutate(average = n/total) %>% 
+  arrange(desc(average)) ->
+  chapter_av
+
+chapter_bs <- bootstrap(chapter_av$average, nboot = 10000, theta = mean)$thetastar
+chapter_bs <- data_frame(means = chapter_bs) 
+
+chapter_bs %>%
+  summarise(mean = mean(means),
+            q1 = quantile(means, 0.025),
+            q2 = quantile(means, 0.975))->
+  chapter_stats
+as_tibble(chapter_stats[,-1])
+```
+### 1.3
+
+Посчитайте биномиальный доверительный интервал употребления слова “сэр” в каждой главе и выведите главу с максимальным из интервалов в формате тиббл.
+``` {r}
+chapter_av %>%
+  mutate(low_ci = binom.test(x = chapter_av$n, n = chapter_av$total, ci.method = "Clopper-Pearson")$conf.int[1],
+         up_ci = binom.test(x = chapter_av$n, n = chapter_av$total, ci.method = "Clopper-Pearson")$conf.int[2]) %>%
+  ggplot(aes(chapter, average))+
+  geom_point()+
+  geom_pointrange(aes(ymin = low_ci, ymax = up_ci))+
+  theme_bw()+
+  coord_flip()+
+  labs(title = 'Среднее и 95% CI употребления "не" в рассказах А. Чехова',
+       x = "", y = "")
+```
+### 1.4
+
+Посчитайте байесовский биномиальный доверительный интервал употребления слова “сэр” в каждой главе и выведите главу с максимальным из интервалов в формате тиббл.
+``` {r}
+mu <- mean(chapter_av$average)
+var <- var(chapter_av$average)
+alpha0 <- ((1 - mu) / var - 1 / mu) * mu ^ 2
+beta0 <- alpha0 * (1 / mu - 1)
+alpha0
+
+chapter_av %>%
+  mutate(alpha_post = n+alpha0,
+         beta_post = total-n+beta0,
+         average_post = alpha_post/(alpha_post+beta_post),
+         cred_int_l = qbeta(.025, alpha_post, beta_post),
+         cred_int_h = qbeta(.975, alpha_post, beta_post)) ->
+  posterior
+
+posterior %>% 
+  select(chapter, total, average, average_post) %>% 
+  arrange(total) %>% 
+  mutate (length = posterior$cred_int_h - posterior$cred_int_l) ->
+  posterior
+
+as_tibble(posterior[which.max(posterior$length),-5])
+```
+### 1.5
+
+Посчитайте биномиальный доверительный интервал употребления слова “сэр” в каждой главе и выведите главу с минимальным из интервалов в формате тиббл.
+``` {r}
+MIN
+```
+### 1.6
+
+Посчитайте байесовский биномиальный доверительный интервал употребления слова “сэр” в каждой главе и выведите главу с минимальным из интервалов в формате тиббл.
+``` {r}
+as_tibble(posterior[which.min(posterior$length),-5])
+```
+### 1.7
+
+Напишите короткий текст, комментирующий наблюдаемые сходства/различия между оценками среднего и доверительных интервалов количества употреблений слова “сэр” во всех главах романа. Что можно сказать про разные главы? Что можно сказать о сходстве/различиях фриквентистсткой и байесовской оценок наблюдаемых параметров?
+
+Размер глав варьируется от 1028 до 2830 слов. Встерчаемость слова "сэр" сильно варьируется по главам. Наибольшее количество "сэр" встретилось в 14 главе (77 раз), а наименьшее — в 6 (1 раз). Grand mean по нашим данным составила 0.009152106. Средняя доля на основе 10000 бутстрэп-подвыборок составила 0.009153586, что практически идентично полученной Grand mean. Это говорит о том, что бутстрэп-подвыборки получились сбалансированными. 
+
