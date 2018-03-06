@@ -62,8 +62,11 @@ as_tibble(chapter_stats[,-1])
 Посчитайте биномиальный доверительный интервал употребления слова “сэр” в каждой главе и выведите главу с максимальным из интервалов в формате тиббл.
 ``` {r}
 chapter_av %>%
-  mutate(low_ci = binom.test(x = chapter_av$n, n = chapter_av$total, ci.method = "Clopper-Pearson")$conf.int[1],
-         up_ci = binom.test(x = chapter_av$n, n = chapter_av$total, ci.method = "Clopper-Pearson")$conf.int[2]) %>%
+  group_by(chapter) %>%
+  mutate(low_ci = binom.test(x = n, n = total, ci.method = "Clopper-Pearson")$conf.int[1],
+         up_ci = binom.test(x = n, n = total, ci.method = "Clopper-Pearson")$conf.int[2]) ->
+  chapter_av
+chapter_av %>%
   ggplot(aes(chapter, average))+
   geom_point()+
   geom_pointrange(aes(ymin = low_ci, ymax = up_ci))+
@@ -71,6 +74,11 @@ chapter_av %>%
   coord_flip()+
   labs(title = 'Среднее и 95% CI употребления "не" в рассказах А. Чехова',
        x = "", y = "")
+chapter_av %>%
+  arrange(total) %>% 
+  mutate (length = up_ci - low_ci) ->
+  chapter_av
+as_tibble(chapter_av[which.max(chapter_av$length),-7])
 ```
 ### 1.4
 
@@ -95,14 +103,18 @@ posterior %>%
   arrange(total) %>% 
   mutate (length = posterior$cred_int_h - posterior$cred_int_l) ->
   posterior
-
+posterior %>% 
+  ggplot(aes(chapter, average_post, ymin = cred_int_l, ymax = cred_int_h))+
+  geom_pointrange()+
+  coord_flip()+
+  theme_bw()
 as_tibble(posterior[which.max(posterior$length),-5])
 ```
 ### 1.5
 
 Посчитайте биномиальный доверительный интервал употребления слова “сэр” в каждой главе и выведите главу с минимальным из интервалов в формате тиббл.
 ``` {r}
-MIN
+as_tibble(chapter_av[which.min(chapter_av$length),-7])
 ```
 ### 1.6
 
@@ -115,4 +127,3 @@ as_tibble(posterior[which.min(posterior$length),-5])
 Напишите короткий текст, комментирующий наблюдаемые сходства/различия между оценками среднего и доверительных интервалов количества употреблений слова “сэр” во всех главах романа. Что можно сказать про разные главы? Что можно сказать о сходстве/различиях фриквентистсткой и байесовской оценок наблюдаемых параметров?
 
 Размер глав варьируется от 1028 до 2830 слов. Встерчаемость слова "сэр" сильно варьируется по главам. Наибольшее количество "сэр" встретилось в 14 главе (77 раз), а наименьшее — в 6 (1 раз). Grand mean по нашим данным составила 0.009152106. Средняя доля на основе 10000 бутстрэп-подвыборок составила 0.009153586, что практически идентично полученной Grand mean. Это говорит о том, что бутстрэп-подвыборки получились сбалансированными. 
-
