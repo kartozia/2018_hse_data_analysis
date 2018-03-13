@@ -4,19 +4,17 @@ author: "Inga Kartozia"
 date: "03 03 2018"
 output: html_document
 ---
+### 1.1
 
-```{r cars}
+Посчитайте среднее употребление слова “сэр” по каждой главе, а потом посчитайте grand mean. Ответ выведите в формате тиббл.
+``` {r}
 library(tidyverse)
 library(bootstrap)
 library(mosaic)
 
 df <- read_csv("https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw3_binomial_ci/hw3_wodehouse.csv", col_names = TRUE)
-df <- as_tibble(df)
-```
-### 1.1
+df <- as_tibble(df) 
 
-Посчитайте среднее употребление слова “сэр” по каждой главе, а потом посчитайте grand mean. Ответ выведите в формате тиббл.
-``` {r}
 df %>% 
   filter(word == "сэр") %>% 
   count(chapter) ->
