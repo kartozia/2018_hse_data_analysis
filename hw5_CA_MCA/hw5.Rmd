@@ -1,0 +1,58 @@
+---
+title: "hw5"
+author: "Inga Kartozia"
+date: "18 03 2018"
+output: html_document
+---
+### 1.1
+Скачайте датасет chairs, в котором собраны разные описания экземпляров из немецких он-лайн каталогов, отнесенным к категориям Stuhl ‘стул’ or Sessel ‘кресло’.
+Используйте все переменные кроме переменных Shop, WordDE и Category, чтобы построить MCA. Нарисуйте все наблюдения, раскрасьте их по переменной Category и добавьте доверительные эллипсы. Сверху нанесите переменные из получившейся модели MCA. Получившийся график ggplot запустите в консоль.
+```{r}
+library(GGally)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(ca)
+df <- read.csv("https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw5_CA_MCA/hw5_chairs.csv")
+#df[sapply(df, is.character)] <- lapply(df[sapply(df, is.character)], as.factor)
+MCA <- MASS::mca(df[, -c(1:3)])
+df <- cbind(df, MCA$rs)
+variables <- as.data.frame(MCA$cs)
+variables$var_names <- rownames(MCA$cs)
+
+df %>% 
+  ggplot(aes(`1`, `2`))+
+  geom_point(aes(color = Category))+
+  stat_ellipse(aes(color = Category))+
+  geom_text(data = variables, aes(`1`, `2`, label = var_names))+
+  theme_bw()+
+  scale_x_continuous(limits = c(-0.015, 0.02))
+```
+
+### 1.2
+Проанализируйте полученные результаты. Что Вы можете сказать на основе полученных результатов про категории Stuhl и Sessel в немецком? Что Вы можете сказать про переменные?
+У Stuhl и Sessel есть небольшое пересечение в функционале (т.е. функции свойственные обоим предметам, например, высота и материал), но тем не менее их функционал неплохо разграничивается. И можно видеть функции, специфичные для конкретного предмета мебели. Например, Back.Adjust для Stuhl и AddFunctions.Bed для Sessel
+
+### 2.1
+Cкачайте данные, содержащие 11 базовых цветов в разных подкорпусах Corpus of Contemporary American English (Davies 2008 - ). Учитывались только адъективные употребления. Постройте CA и нарисуйте биплот с переменными из столбцов и строчек (без стрелочек). Получившийся график ggplot запустите в консоль.
+```{r}
+data = read.csv('https://raw.githubusercontent.com/agricolamz/2018_data_analysis_for_linguists/master/data/students/kartozia/hw5_CA_MCA/hw5_colreg.csv')
+rownames(data) <- c('color1', 'color2', 'color3', 'color4', 'color5', 'color6', 'color7', 'color8', 'color9', 'color10', 'color11')
+ca <- ca(data)
+data_col <- data.frame(ca$colcoord)
+data_col$rows <- rownames(ca$colcoord)
+
+data_row <- data.frame(ca$rowcoord)
+data_row$rows <- rownames(ca$rowcoord)
+
+data_col %>% 
+  ggplot(aes(Dim1, Dim2, label = rows))+
+  geom_text(color = "violet")+
+  geom_text(data = data_row, color = "green")+
+  theme_bw()+
+  labs(x = "Dim1",
+       y = "Dim2")
+```
+### 2.2
+В академическом стиле редко встречаются адъективные употребления цветов, это можно объяснить особенностями стиля и тематикой академических текстов. Color4 отбился от всех. Большинство цветов где-то между press и fiction, хотя большинство всё-таки кластеризуется около fiction. Color1 очень близок к spoken, возможно, это некое устойчивое выражение или, например, связанное с человеком (красный). 
+
